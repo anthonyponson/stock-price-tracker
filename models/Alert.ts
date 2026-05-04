@@ -1,16 +1,33 @@
-import mongoose, { Schema, Document } from "mongoose"
+import mongoose, { Schema, Document } from "mongoose";
 
-export interface AlertDocument extends Document {
-  symbol: string
-  targetPrice: number
-  triggered: boolean
+export interface IAlert extends Document {
+  symbol: string;
+  targetPrice: number;
+  triggered: boolean;
 }
 
-const AlertSchema = new Schema<AlertDocument>({
-  symbol: { type: String, required: true },
-  targetPrice: { type: Number, required: true },
-  triggered: { type: Boolean, default: false }
-})
+const AlertSchema = new Schema<IAlert>(
+  {
+    symbol: {
+      type: String,
+      required: true,
+    },
+    targetPrice: {
+      type: Number,
+      required: true,
+    },
+    triggered: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-export default mongoose.models.Alert ||
-  mongoose.model<AlertDocument>("Alert", AlertSchema)
+const Alert =
+  mongoose.models.Alert ||
+  mongoose.model<IAlert>("Alert", AlertSchema);
+
+export default Alert;
