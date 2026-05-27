@@ -1,6 +1,10 @@
 "use client";
 
-import { createChart, ColorType } from "lightweight-charts";
+import {
+  createChart,
+  ColorType,
+  LineSeries,
+} from "lightweight-charts";
 import { useEffect, useRef } from "react";
 
 export default function StockChart() {
@@ -31,10 +35,10 @@ export default function StockChart() {
       },
     });
 
-    const lineSeries = chart.addLineSeries({
-      color: "#22c55e",
-      lineWidth: 3,
-    });
+    const lineSeries = chart.addSeries(LineSeries, {
+  color: "#22c55e",
+  lineWidth: 3,
+});
 
     lineSeries.setData([
       { time: "2025-05-01", value: 2400 },

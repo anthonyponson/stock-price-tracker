@@ -1,5 +1,6 @@
 import Image from "next/image";
 import StockChart from "@/components/stockChart";
+import StockList from "@/components/stockList";
 
 export default function Home() {
   return (
@@ -16,7 +17,8 @@ export default function Home() {
         </p>
       </div>
 
-      <StockChart />
+      {/* <StockChart /> */}
+      <StockList />
 
     </main>
     </div>
