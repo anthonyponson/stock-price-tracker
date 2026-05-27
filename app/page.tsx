@@ -1,11 +1,26 @@
-import Image from "next/image";
-import StockChart from "@/components/stockChart";
+"use client";
+
+import { useState } from "react";
+
+import SearchBar from "@/components/SearchBar";
 import StockList from "@/components/stockList";
 
-export default function Home() {
+export default function HomePage() {
+  const [stocks, setStocks] = useState([
+    "RELIANCE",
+    "TCS",
+    "INFY",
+    "HDFCBANK",
+  ]);
+
+  function addStock(symbol: string) {
+    if (stocks.includes(symbol)) return;
+
+    setStocks((prev) => [...prev, symbol]);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-     <main className="min-h-screen bg-slate-900 text-white">
+    <main className="min-h-screen bg-slate-900 text-white">
       
       <div className="p-10">
         <h1 className="text-4xl font-bold mb-2">
@@ -17,10 +32,10 @@ export default function Home() {
         </p>
       </div>
 
-      {/* <StockChart /> */}
-      <StockList />
+      <SearchBar onAddStock={addStock} />
+
+      <StockList stocks={stocks} />
 
     </main>
-    </div>
   );
 }

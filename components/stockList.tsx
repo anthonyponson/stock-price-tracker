@@ -2,24 +2,37 @@
 
 import { useEffect, useState } from "react";
 
-interface Stock {
+interface StockData {
   symbol: string;
   price: number;
   previousClose: number;
 }
 
-export default function StockList() {
-  const [stocks, setStocks] = useState<Stock[]>([]);
+interface Props {
+  stocks: string[];
+}
+
+export default function StockList({
+  stocks,
+}: Props) {
+  const [stockData, setStockData] = useState<
+    StockData[]
+  >([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStocks() {
       try {
-        const res = await fetch("/api/stocks");
+        const query = stocks.join(",");
+
+        const res = await fetch(
+          `/api/stocks?symbols=${query}`
+        );
 
         const data = await res.json();
 
-        setStocks(data);
+        setStockData(data);
       } catch (error) {
         console.error(error);
       } finally {
@@ -28,7 +41,7 @@ export default function StockList() {
     }
 
     fetchStocks();
-  }, []);
+  }, [stocks]);
 
   if (loading) {
     return (
@@ -40,7 +53,7 @@ export default function StockList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 p-10">
-      {stocks.map((stock) => {
+      {stockData.map((stock) => {
         const isPositive =
           stock.price >= stock.previousClose;
 

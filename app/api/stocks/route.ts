@@ -1,33 +1,49 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const STOCKS = [
-  "RELIANCE.NS",
-  "TCS.NS",
-  "INFY.NS",
-  "HDFCBANK.NS",
-];
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+
+    const symbols =
+      searchParams.get("symbols")?.split(",") || [];
+
     const results = await Promise.all(
-      STOCKS.map(async (symbol) => {
-        const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-        );
+      symbols.map(async (symbol) => {
+        try {
+          const yahooSymbol = `${symbol}.NS`;
 
-        const data = await res.json();
+          const res = await fetch(
+            `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`
+          );
 
-        const result = data.chart.result[0];
+          const data = await res.json();
 
-        return {
-          symbol: symbol.replace(".NS", ""),
-          price: result.meta.regularMarketPrice,
-          previousClose: result.meta.previousClose,
-        };
+          if (
+            !data.chart ||
+            !data.chart.result ||
+            !data.chart.result[0]
+          ) {
+            return null;
+          }
+
+          const result = data.chart.result[0];
+
+          return {
+            symbol,
+            price: result.meta.regularMarketPrice,
+            previousClose: result.meta.previousClose,
+          };
+
+        } catch {
+          return null;
+        }
       })
     );
 
-    return NextResponse.json(results);
+    const filteredResults =
+      results.filter(Boolean);
+
+    return NextResponse.json(filteredResults);
 
   } catch (error) {
     console.error(error);
