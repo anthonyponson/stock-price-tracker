@@ -83,7 +83,7 @@ export default function AlertForm({
       >
         {loading
           ? "Saving..."
-          : "Save Alert"}
+          : "Save Alert.. "}
       </button>
 
       {message && (
