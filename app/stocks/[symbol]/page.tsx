@@ -1,3 +1,5 @@
+import AlertForm from "@/components/AlertForm";
+
 interface Props {
   params: Promise<{
     symbol: string;
@@ -18,6 +20,8 @@ export default async function StockDetailsPage({
       <p className="text-slate-400 mt-2">
         Stock Details Page
       </p>
+
+      <AlertForm symbol={symbol} />
     </div>
   );
 }
