@@ -20,7 +20,7 @@ export default function HomePage() {
         <h1 className="text-4xl font-bold mb-2">Stock Alert Dashboard</h1>
 
         <p className="text-slate-400">
-          Track stocks and receive alerts instantly.
+          Track stocks and resssceive alerts instantly.
         </p>
       </div>
 
