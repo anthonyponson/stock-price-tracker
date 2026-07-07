@@ -1,32 +1,27 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-
-import SearchBar from "@/components/SearchBar"
-import StockList from "@/components/stockList"
+import SearchBar from "@/components/SearchBar";
+import StockList from "@/components/stockList";
+import AlertList from "@/components/AlertList";
 
 export default function HomePage() {
-  const [stocks, setStocks] = useState(["RELIANCE", "TCS", "INFY", "HDFCBANK"])
-
-  function addStock(symbol: string) {
-    if (stocks.includes(symbol)) return
-
-    setStocks((prev) => [...prev, symbol])
-  }
-
   return (
     <main className="min-h-screen bg-slate-900 text-white">
       <div className="p-10">
-        <h1 className="text-4xl font-bold mb-2">Stock Alert Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-2">
+          Stock Alert Dashboard
+        </h1>
 
         <p className="text-slate-400">
-          Track stocks and resssceive alerts instantly.
+          Track stocks and receive alerts instantly.
         </p>
       </div>
 
-      <SearchBar onAddStock={addStock} />
+      <SearchBar />
 
-      <StockList stocks={stocks} />
+      <StockList />
+
+      <AlertList />
     </main>
-  )
+  );
 }

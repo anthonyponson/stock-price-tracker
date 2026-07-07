@@ -2,27 +2,21 @@
 
 import { useEffect, useState } from "react";
 
-interface Props {
-  onAddStock: (symbol: string) => void;
-}
+
 
 interface SearchResult {
   symbol: string;
   name: string;
 }
 
-export default function SearchBar({
-  onAddStock,
-}: Props) {
+export default function SearchBar() {
   const [input, setInput] = useState("");
 
-  const [results, setResults] =
-    useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
 
   const [error, setError] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -34,16 +28,11 @@ export default function SearchBar({
       try {
         setLoading(true);
 
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(
-            input
-          )}`
-        );
+        const res = await fetch(`/api/search?q=${encodeURIComponent(input)}`);
 
         const data = await res.json();
 
         setResults(data.slice(0, 10));
-
       } catch (error) {
         console.error(error);
       } finally {
@@ -54,37 +43,39 @@ export default function SearchBar({
     return () => clearTimeout(timeout);
   }, [input]);
 
-  async function addStock(
-    symbol: string
-  ) {
+  async function addStock(symbol: string) {
     try {
       setError("");
 
-      const res = await fetch(
-        `/api/stocks?symbols=${symbol}`
-      );
+      const res = await fetch(`/api/stocks?symbols=${symbol}`);
 
       const data = await res.json();
 
-      if (
-        !data.length ||
-        !data[0]
-      ) {
+      if (!data.length || !data[0]) {
         setError("Stock not found");
         return;
       }
+      const saveRes = await fetch("/api/stock", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          symbol,
+        }),
+      });
 
-      onAddStock(symbol);
+      if (!saveRes.ok) {
+        throw new Error("Failed to save stock");
+      }
+      
 
       setInput("");
       setResults([]);
-
     } catch (error) {
       console.error(error);
 
-      setError(
-        "Failed to add stock"
-      );
+      setError("Failed to add stock");
     }
   }
 
@@ -94,17 +85,13 @@ export default function SearchBar({
         <input
           type="text"
           value={input}
-          onChange={(e) =>
-            setInput(e.target.value)
-          }
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Search Indian stocks..."
           className="w-full bg-slate-800 rounded-xl px-4 py-3 outline-none text-white"
         />
 
         <button
-          onClick={() =>
-            addStock(input)
-          }
+          onClick={() => addStock(input)}
           className="bg-green-500 hover:bg-green-600 px-6 rounded-xl font-semibold"
         >
           Add
@@ -112,9 +99,7 @@ export default function SearchBar({
       </div>
 
       {loading && (
-        <div className="mt-2 text-slate-400 text-sm">
-          Searching...
-        </div>
+        <div className="mt-2 text-slate-400 text-sm">Searching...</div>
       )}
 
       {results.length > 0 && (
@@ -122,28 +107,18 @@ export default function SearchBar({
           {results.map((stock) => (
             <div
               key={stock.symbol}
-              onClick={() =>
-                addStock(stock.symbol)
-              }
+              onClick={() => addStock(stock.symbol)}
               className="px-4 py-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700"
             >
-              <div className="font-semibold">
-                {stock.symbol}
-              </div>
+              <div className="font-semibold">{stock.symbol}</div>
 
-              <div className="text-sm text-slate-400">
-                {stock.name}
-              </div>
+              <div className="text-sm text-slate-400">{stock.name}</div>
             </div>
           ))}
         </div>
       )}
 
-      {error && (
-        <p className="text-red-500 mt-2">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 }
