@@ -5,23 +5,20 @@ import Alert from "@/models/Alert";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 export async function GET(req: NextRequest) {
- console.log("========== API CHECK STARTED ==========");
+  console.log("========== API CHECK STARTED ==========");
 
-const secret = req.headers.get("x-cron-secret");
+  const secret = req.headers.get("x-cron-secret");
 
-console.log("Received Secret:", secret);
-console.log("Expected Secret:", process.env.CRON_SECRET);
+  console.log("Received Secret:", secret);
+  console.log("Expected Secret:", process.env.CRON_SECRET);
 
-if (secret !== process.env.CRON_SECRET) {
-  console.log("❌ Unauthorized");
+  if (secret !== process.env.CRON_SECRET) {
+    console.log("❌ Unauthorized");
 
-  return NextResponse.json(
-    { error: "Unauthorized" },
-    { status: 401 }
-  );
-}
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-console.log("✅ Authorized");
+  console.log("✅ Authorized");
   try {
     await connectDB();
 
@@ -42,7 +39,6 @@ console.log("✅ Authorized");
       }
 
       const currentPrice = data.chart.result[0].meta.regularMarketPrice;
-      
 
       let shouldTrigger = false;
 
