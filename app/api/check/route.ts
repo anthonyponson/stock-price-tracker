@@ -5,14 +5,23 @@ import Alert from "@/models/Alert";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  console.log("Received Secret:", secret);
-  console.log("Expected Secret:", process.env.CRON_SECRET);
+ console.log("========== API CHECK STARTED ==========");
 
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const secret = req.headers.get("x-cron-secret");
 
+console.log("Received Secret:", secret);
+console.log("Expected Secret:", process.env.CRON_SECRET);
+
+if (secret !== process.env.CRON_SECRET) {
+  console.log("❌ Unauthorized");
+
+  return NextResponse.json(
+    { error: "Unauthorized" },
+    { status: 401 }
+  );
+}
+
+console.log("✅ Authorized");
   try {
     await connectDB();
 
