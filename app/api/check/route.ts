@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       }
 
       const currentPrice = data.chart.result[0].meta.regularMarketPrice;
-      12;
+      
 
       let shouldTrigger = false;
 
