@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Alert from "@/models/Alert";
 
 
+
 export async function GET() {
   try {
     await connectDB();

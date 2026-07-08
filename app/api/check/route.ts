@@ -1,10 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
 import Alert from "@/models/Alert";
 import { sendTelegramMessage } from "@/lib/telegram";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Get the "secret" from the URL
+  const secret = req.nextUrl.searchParams.get("secret");
+
+  // Compare it with the environment variable
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
     await connectDB();
 
@@ -20,8 +31,7 @@ export async function GET() {
       const data = await res.json();
 
       const currentPrice =
-        data.chart.result[0].meta
-          .regularMarketPrice;
+        data.chart.result[0].meta.regularMarketPrice;
 
       let shouldTrigger = false;
 
@@ -41,7 +51,7 @@ export async function GET() {
 
       if (shouldTrigger) {
         await sendTelegramMessage(
-          `🚨 Stock Alert
+`🚨 Stock Alert
 
 ${alert.symbol}
 
@@ -51,8 +61,7 @@ Target Price: ₹${alert.targetPrice}`
         );
 
         alert.triggered = true;
-        alert.currentPrice =
-          currentPrice;
+        alert.currentPrice = currentPrice;
 
         await alert.save();
       }
@@ -61,6 +70,7 @@ Target Price: ₹${alert.targetPrice}`
     return NextResponse.json({
       success: true,
     });
+
   } catch (error) {
     console.error(error);
 
