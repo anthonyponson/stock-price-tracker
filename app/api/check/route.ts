@@ -27,13 +27,13 @@ export async function GET(req: NextRequest) {
 
       const data = await res.json();
 
-      // Skip this alert if Yahoo returned an error
-      if (!data.chart?.result?.[0]) {
+      if (!data.chart?.result?.[0]?.meta?.regularMarketPrice) {
         console.log(`❌ Failed to fetch ${alert.symbol}`);
         continue;
       }
 
       const currentPrice = data.chart.result[0].meta.regularMarketPrice;
+      12;
 
       let shouldTrigger = false;
 
