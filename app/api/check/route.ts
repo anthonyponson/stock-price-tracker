@@ -4,31 +4,40 @@ import { connectDB } from "@/lib/mongodb";
 import Alert from "@/models/Alert";
 import { sendTelegramMessage } from "@/lib/telegram";
 
+const COOLDOWN_HOURS = 24;
+
 export async function GET(req: NextRequest) {
   console.log("========== API CHECK STARTED ==========");
 
   const secret = req.headers.get("x-cron-secret");
 
-  console.log("Received Secret:", secret);
-  console.log("Expected Secret:", process.env.CRON_SECRET);
-
   if (secret !== process.env.CRON_SECRET) {
     console.log("❌ Unauthorized");
 
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
   console.log("✅ Authorized");
+
   try {
     await connectDB();
 
-    const alerts = await Alert.find({
-      triggered: false,
-    });
+    const alerts = await Alert.find();
+
+    console.log(`Found ${alerts.length} alerts`);
+
+    const cooldown =
+      COOLDOWN_HOURS * 60 * 60 * 1000;
 
     for (const alert of alerts) {
+      console.log("-----------------------------");
+      console.log(`Checking ${alert.symbol}`);
+
       const res = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${alert.symbol}`,
+        `https://query1.finance.yahoo.com/v8/finance/chart/${alert.symbol}`
       );
 
       const data = await res.json();
@@ -38,39 +47,74 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      const currentPrice = data.chart.result[0].meta.regularMarketPrice;
+      const currentPrice =
+        data.chart.result[0].meta.regularMarketPrice;
+
+      alert.currentPrice = currentPrice;
 
       let shouldTrigger = false;
 
-      if (alert.condition === "below" && currentPrice <= alert.targetPrice) {
+      if (
+        alert.condition === "below" &&
+        currentPrice <= alert.targetPrice
+      ) {
         shouldTrigger = true;
       }
 
-      if (alert.condition === "above" && currentPrice >= alert.targetPrice) {
+      if (
+        alert.condition === "above" &&
+        currentPrice >= alert.targetPrice
+      ) {
         shouldTrigger = true;
       }
 
-      if (shouldTrigger) {
-        await sendTelegramMessage(
-          `🚨 Stock Alert
+      console.log("Current:", currentPrice);
+      console.log("Target :", alert.targetPrice);
+      console.log("Should Trigger:", shouldTrigger);
+
+      if (!shouldTrigger) {
+        await alert.save();
+        continue;
+      }
+
+      const now = new Date();
+
+      const canNotify =
+        !alert.lastTriggeredAt ||
+        now.getTime() -
+          new Date(alert.lastTriggeredAt).getTime() >=
+          cooldown;
+
+      console.log("Can Notify:", canNotify);
+
+      if (!canNotify) {
+        await alert.save();
+        continue;
+      }
+
+      console.log("📨 Sending Telegram...");
+
+      await sendTelegramMessage(
+`🚨 Stock Alert
 
 ${alert.symbol}
 
 Current Price: ₹${currentPrice}
 
-Target Price: ₹${alert.targetPrice}`,
-        );
+Target Price: ₹${alert.targetPrice}`
+      );
 
-        alert.triggered = true;
-        alert.currentPrice = currentPrice;
+      console.log("✅ Telegram Sent");
 
-        await alert.save();
-      }
+      alert.lastTriggeredAt = now;
+
+      await alert.save();
     }
 
     return NextResponse.json({
       success: true,
     });
+
   } catch (error) {
     console.error(error);
 
@@ -80,7 +124,7 @@ Target Price: ₹${alert.targetPrice}`,
       },
       {
         status: 500,
-      },
+      }
     );
   }
 }

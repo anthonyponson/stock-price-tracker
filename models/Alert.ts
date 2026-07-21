@@ -4,8 +4,8 @@ export interface IAlert extends Document {
   symbol: string;
   targetPrice: number;
   condition: "below" | "above";
-  triggered: boolean;
   currentPrice?: number;
+  lastTriggeredAt?: Date;
 }
 
 const AlertSchema = new Schema<IAlert>(
@@ -26,9 +26,9 @@ const AlertSchema = new Schema<IAlert>(
       default: "below",
     },
 
-    triggered: {
-      type: Boolean,
-      default: false,
+    lastTriggeredAt: {
+      type: Date,
+      default: null,
     },
 
     currentPrice: {
