@@ -79,6 +79,8 @@ export async function GET(req: NextRequest) {
 
       const now = new Date();
 
+      console.log("lastTriggeredAt:", alert.lastTriggeredAt);
+
       const canNotify =
         !alert.lastTriggeredAt ||
         now.getTime() -
