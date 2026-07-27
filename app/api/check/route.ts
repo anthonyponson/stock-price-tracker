@@ -52,21 +52,8 @@ export async function GET(req: NextRequest) {
 
       alert.currentPrice = currentPrice;
 
-      let shouldTrigger = false;
-
-      if (
-        alert.condition === "below" &&
-        currentPrice <= alert.targetPrice
-      ) {
-        shouldTrigger = true;
-      }
-
-      if (
-        alert.condition === "above" &&
-        currentPrice >= alert.targetPrice
-      ) {
-        shouldTrigger = true;
-      }
+      const shouldTrigger =
+  currentPrice <= alert.targetPrice;
 
       console.log("Current:", currentPrice);
       console.log("Target :", alert.targetPrice);

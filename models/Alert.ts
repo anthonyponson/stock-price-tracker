@@ -3,7 +3,6 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IAlert extends Document {
   symbol: string;
   targetPrice: number;
-  condition: "below" | "above";
   currentPrice?: number;
   lastTriggeredAt?: Date;
 }
@@ -18,12 +17,6 @@ const AlertSchema = new Schema<IAlert>(
     targetPrice: {
       type: Number,
       required: true,
-    },
-
-    condition: {
-      type: String,
-      enum: ["below", "above"],
-      default: "below",
     },
 
     lastTriggeredAt: {
