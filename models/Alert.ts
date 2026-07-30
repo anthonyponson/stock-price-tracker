@@ -6,7 +6,6 @@ export interface IAlert extends Document {
   currentPrice?: number;
   lastTriggeredAt?: Date;
   triggered: boolean;
-  triggeredAt: Date;
 }
 
 const AlertSchema = new Schema<IAlert>(
@@ -18,10 +17,6 @@ const AlertSchema = new Schema<IAlert>(
     triggered: {
       type: Boolean,
       default: false,
-    },
-
-    triggeredAt: {
-      type: Date,
     },
 
     targetPrice: {
