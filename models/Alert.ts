@@ -5,6 +5,8 @@ export interface IAlert extends Document {
   targetPrice: number;
   currentPrice?: number;
   lastTriggeredAt?: Date;
+  triggered: boolean;
+  triggeredAt: Date;
 }
 
 const AlertSchema = new Schema<IAlert>(
@@ -12,6 +14,14 @@ const AlertSchema = new Schema<IAlert>(
     symbol: {
       type: String,
       required: true,
+    },
+    triggered: {
+      type: Boolean,
+      default: false,
+    },
+
+    triggeredAt: {
+      type: Date,
     },
 
     targetPrice: {
@@ -30,11 +40,10 @@ const AlertSchema = new Schema<IAlert>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Alert =
-  mongoose.models.Alert ||
-  mongoose.model<IAlert>("Alert", AlertSchema);
+  mongoose.models.Alert || mongoose.model<IAlert>("Alert", AlertSchema);
 
 export default Alert;

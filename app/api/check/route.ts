@@ -4,8 +4,6 @@ import { connectDB } from "@/lib/mongodb";
 import Alert from "@/models/Alert";
 import { sendTelegramMessage } from "@/lib/telegram";
 
-const COOLDOWN_HOURS = 24;
-
 export async function GET(req: NextRequest) {
   console.log("========== API CHECK STARTED ==========");
 
@@ -25,12 +23,12 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    const alerts = await Alert.find();
+    // Only check alerts that haven't been triggered yet
+    const alerts = await Alert.find({
+      triggered: false,
+    });
 
-    console.log(`Found ${alerts.length} alerts`);
-
-    const cooldown =
-      COOLDOWN_HOURS * 60 * 60 * 1000;
+    console.log(`Found ${alerts.length} active alerts`);
 
     for (const alert of alerts) {
       console.log("-----------------------------");
@@ -42,74 +40,61 @@ export async function GET(req: NextRequest) {
 
       const data = await res.json();
 
-      if (!data.chart?.result?.[0]?.meta?.regularMarketPrice) {
+      const currentPrice =
+        data.chart?.result?.[0]?.meta?.regularMarketPrice;
+
+      if (!currentPrice) {
         console.log(`❌ Failed to fetch ${alert.symbol}`);
         continue;
       }
 
-      const currentPrice =
-        data.chart.result[0].meta.regularMarketPrice;
-
       alert.currentPrice = currentPrice;
 
-      const shouldTrigger =
-  currentPrice <= alert.targetPrice;
+      console.log("Current Price:", currentPrice);
+      console.log("Target Price :", alert.targetPrice);
 
-      console.log("Current:", currentPrice);
-      console.log("Target :", alert.targetPrice);
-      console.log("Should Trigger:", shouldTrigger);
-
-      if (!shouldTrigger) {
+      // Price hasn't reached target yet
+      if (currentPrice > alert.targetPrice) {
         await alert.save();
-        continue;
-      }
-
-      const now = new Date();
-
-      console.log("lastTriggeredAt:", alert.lastTriggeredAt);
-
-      const canNotify =
-        !alert.lastTriggeredAt ||
-        now.getTime() -
-          new Date(alert.lastTriggeredAt).getTime() >=
-          cooldown;
-
-      console.log("Can Notify:", canNotify);
-
-      if (!canNotify) {
-        await alert.save();
+        console.log("⏳ Target not reached");
         continue;
       }
 
       console.log("📨 Sending Telegram...");
 
       await sendTelegramMessage(
-`🚨 Stock Alert
+        `🚨 Stock Alert
 
 ${alert.symbol}
 
 Current Price: ₹${currentPrice}
 
-Target Price: ₹${alert.targetPrice}`
+Target Price: ₹${alert.targetPrice}
+
+✅ Target reached!`
       );
 
       console.log("✅ Telegram Sent");
 
-      alert.lastTriggeredAt = now;
+      // Mark alert as completed
+      alert.triggered = true;
+      alert.triggeredAt = new Date();
 
       await alert.save();
+
+      console.log("✅ Alert marked as triggered");
     }
 
     return NextResponse.json({
       success: true,
+      checked: alerts.length,
     });
-
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
       {
-        error: "Failed",
+        error: "Failed to check alerts",
       },
       {
         status: 500,
