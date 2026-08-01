@@ -23,47 +23,69 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    // Only check alerts that haven't been triggered yet
-    const alerts = await Alert.find({
-      triggered: false,
-    });
+    const alerts = await Alert.find();
 
-    console.log(`Found ${alerts.length} active alerts`);
+    console.log(`Found ${alerts.length} alerts`);
 
     for (const alert of alerts) {
       console.log("-----------------------------");
       console.log(`Checking ${alert.symbol}`);
 
-      const res = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${alert.symbol}`
-      );
+      try {
+        // Get current stock price
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${alert.symbol}`,
+          {
+            cache: "no-store",
+          }
+        );
 
-      const data = await res.json();
+        if (!res.ok) {
+          console.log(
+            `❌ Yahoo request failed for ${alert.symbol}: ${res.status}`
+          );
 
-      const currentPrice =
-        data.chart?.result?.[0]?.meta?.regularMarketPrice;
+          continue;
+        }
 
-      if (!currentPrice) {
-        console.log(`❌ Failed to fetch ${alert.symbol}`);
-        continue;
-      }
+        const data = await res.json();
 
-      alert.currentPrice = currentPrice;
+        const currentPrice =
+          data.chart?.result?.[0]?.meta?.regularMarketPrice;
 
-      console.log("Current Price:", currentPrice);
-      console.log("Target Price :", alert.targetPrice);
+        if (typeof currentPrice !== "number") {
+          console.log(
+            `❌ Current price not found for ${alert.symbol}`
+          );
 
-      // Price hasn't reached target yet
-      if (currentPrice > alert.targetPrice) {
-        await alert.save();
-        console.log("⏳ Target not reached");
-        continue;
-      }
+          continue;
+        }
 
-      console.log("📨 Sending Telegram...");
+        console.log("Current Price:", currentPrice);
+        console.log("Target Price :", alert.targetPrice);
 
-      await sendTelegramMessage(
-        `🚨 Stock Alert
+        // Only trigger when current price
+        // reaches or goes below target price
+        const shouldTrigger =
+          currentPrice <= alert.targetPrice;
+
+        console.log("Should Trigger:", shouldTrigger);
+
+        // Target hasn't been reached yet
+        if (!shouldTrigger) {
+          alert.currentPrice = currentPrice;
+
+          await alert.save();
+
+          console.log("⏭️ Target not reached");
+
+          continue;
+        }
+
+        console.log("📨 Sending Telegram...");
+
+        await sendTelegramMessage(
+`🚨 Stock Alert
 
 ${alert.symbol}
 
@@ -71,30 +93,37 @@ Current Price: ₹${currentPrice}
 
 Target Price: ₹${alert.targetPrice}
 
-✅ Target reached!`
-      );
+Target price reached!`
+        );
 
-      console.log("✅ Telegram Sent");
+        console.log("✅ Telegram Sent");
 
-      // Mark alert as completed
-      alert.triggered = true;
-      alert.triggeredAt = new Date();
+        // Delete the alert after successful notification
+        await Alert.findByIdAndDelete(alert._id);
 
-      await alert.save();
+        console.log(`🗑️ Alert deleted: ${alert.symbol}`);
+      } catch (alertError) {
+        console.error(
+          `❌ Error checking ${alert.symbol}:`,
+          alertError
+        );
 
-      console.log("✅ Alert marked as triggered");
+        continue;
+      }
     }
+
+    console.log("========== API CHECK FINISHED ==========");
 
     return NextResponse.json({
       success: true,
-      checked: alerts.length,
+      alertsChecked: alerts.length,
     });
   } catch (error) {
-    console.error(error);
+    console.error("❌ CHECK API ERROR:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to check alerts",
+        error: "Failed",
       },
       {
         status: 500,
